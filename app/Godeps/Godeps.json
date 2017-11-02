@@ -1,0 +1,68 @@
+{
+	"ImportPath": "github.com/runyontr/canary-app",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v79",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/go-kit/kit/endpoint",
+			"Comment": "v0.6.0",
+			"Rev": "4dc7be5d2d12881735283bcab7352178e190fc71"
+		},
+		{
+			"ImportPath": "github.com/go-kit/kit/log",
+			"Comment": "v0.6.0",
+			"Rev": "4dc7be5d2d12881735283bcab7352178e190fc71"
+		},
+		{
+			"ImportPath": "github.com/go-kit/kit/transport/http",
+			"Comment": "v0.6.0",
+			"Rev": "4dc7be5d2d12881735283bcab7352178e190fc71"
+		},
+		{
+			"ImportPath": "github.com/go-logfmt/logfmt",
+			"Comment": "v0.3.0",
+			"Rev": "390ab7935ee28ec6b286364bba9b4dd6410cb3d5"
+		},
+		{
+			"ImportPath": "github.com/go-stack/stack",
+			"Comment": "v1.6.0",
+			"Rev": "817915b46b97fd7bb80e8ab6b69f01a53ac3eebf"
+		},
+		{
+			"ImportPath": "github.com/kr/logfmt",
+			"Rev": "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
+		},
+		{
+			"ImportPath": "github.com/runyontr/k8s-canary/app/models",
+			"Rev": "85b5be22b5a7c732c6ce93bd1bcabe0ee5083fc4"
+		},
+		{
+			"ImportPath": "github.com/runyontr/k8s-canary/app/service",
+			"Rev": "85b5be22b5a7c732c6ce93bd1bcabe0ee5083fc4"
+		},
+		{
+			"ImportPath": "github.com/runyontr/k8s-canary/app/transport",
+			"Rev": "85b5be22b5a7c732c6ce93bd1bcabe0ee5083fc4"
+		},
+		{
+			"ImportPath": "github.com/sirupsen/logrus",
+			"Comment": "v1.0.3-11-g89742ae",
+			"Rev": "89742aefa4b206dcf400792f3bd35b542998eb3b"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/windows",
+			"Rev": "7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce"
+		}
+	]
+}
