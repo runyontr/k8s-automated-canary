@@ -117,24 +117,53 @@ mounted automatically by Kubernetes, so no additional configuration is required.
 ## Monitoring
 
 ```
-helm install stable/prometheus
-helm install stable/grafana
+helm install stable/prometheus --set server.service.type=NodePort --name prom
+helm install stable/grafana  --set server.service.type=NodePort --set server.adminPassword=admin --name graf
 ```
+
+kubernetes_sd_configs:
+- api_servers:
+- 'https://kubernetes'
 
 get the grafana admin password:
 
+
+Log into the service at the following port (on 192.168.99.100) with the password admin
+
 ```
-kubectl get secret --namespace default dangling-liger-grafana -o jsonpath="{.data.grafana-admin-password}" | base64 --decode ; echo
+NODE_PORT=$(kubectl get svc graf-grafana  \
+  --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
 ```
 
-Log into the service at
 
+After logging in, we need to add Prometheus as a data source:
+
+Here are the config values that should be used:
+
+Name: Prometheus
+Type: Promethus
+
+URL: http://prom-prometheus-server
+Access: proxy
+
+
+Click save and test and we should be good to go.
+
+
+## Import Dashboard
 
 
 
 #The Setup
 
 To start, we will need a new git repository.  For ease, we chose to make a new project in github.com.
+
+We need to replace the import packages in the application to prevent importing the packages from my project.
+
+```
+sed -i
+
+``` 
 
 
 ## Create Jenkins Job
