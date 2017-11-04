@@ -9,25 +9,13 @@ This tutorial looks to expand upon the tutorial in [runyontr/k8s-canary](http://
  
 # Setup
 
-## Install Minikube
-
-This guide uses Minikube to deploy Kubernetes.  Follow [these instructions](https://kubernetes.io/docs/getting-started-guides/minikube/)
- for installation guides.
- 
-## Start Minkiube
-
-We do not need any special configuration for our minikube deployment.  To start the cluster run
-
-```
-minikube start
-```
 
 
 # Deploy Infrastructure
 
 
 ```
-helm install -f k8s/jenkins/values.yaml stable/jenkins
+helm install -f k8s/jenkins/values.yaml --name pretty-bird stable/jenkins
 ```
 //TODO(@trunyon) the docuemntation allows for configuring the default plugins:
 Master.InstallPlugins
@@ -38,52 +26,45 @@ Then what do we need to do to configure each plugin?
 Get the login information for the admin password
 
 ```
-printf $(kubectl get secret --namespace default khaki-lynx-jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo
+printf $(kubectl get secret --namespace default pretty-bird-jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo
+```
+
+and the login address:
+```
+export SERVICE_IP=$(kubectl get svc --namespace default pretty-bird-jenkins --template "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}")
+  echo http://$SERVICE_IP:8080/login
 ```
 
 
+# Configure Jenkins
 
-Get the port
+Navigate to  `Manage Jenkins -> Configure Systems` and ensure the following settings are present:
 
-```
-NODE_PORT=$(kubectl get svc khaki-lynx-jenkins \
-  --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
-```
+![Jenkins Slave](imgs/jenkins-slave.png)
 
-Login to Jenkins at 
+![Docker In Docker](imgs/dind.png)
 
-```
-echo 192.168.99.100:${NODE_PORT}
-```
+![Mounted Volumes](imgs/Volumes.png)
 
-## Jenkins Docker
 
-Install the docker plugin to allow for pushing to docker.io
+## Custom Jenkins-Slave image
 
- To use docker in Kubernetes, we'll use a sidecar Docker-in-Docker container.  This container will
- provide access to the Docker daemon from the jnlp slave image via the port 2375.  The environment
- variable `DOCKER_HOST` is set to let the docker executable mounted in the container to know where
- to post requests to.
+This custom image is built from [this Dockerfile](jenkins/slave-image/Dockerfile) and has Golang 1.8 and
+kubectl 1.8.0 pre-installed so it doesn't have to be installed fresh each run.
+
+## Explain docker in docker sidecar
  
- Go to the Jenkins Configuration's Cloud section and 
+ Make the following changes to the Kubernetes section's configurations:
  
- 1) Add Container Environment Variable DOCKER_HOST=tcp://localhost:2375 to tell the container how to to talk to the docker
- daemon
- 2) The Docker-In-Docker sidecar container:
-   a) name = docker-in-docker
-   b) Docker Image = docker:1.12-dind
-   c) Command to run slave agent: /usr/local/bin/dockerd-entrypoint.sh
-   d) Args to pass the command:  --storage-driver=overlay
-   e) run privileged
- 3) Add Volumes
-   a) Empty Dir Volume
-      i) Mount Path:  /var/lib/docker to get access to the underlying node's docker storage
-   b) Host Path volume
-      i) /usr/bin/docker -> /usr/bin/docker to get access to the underlying nodes docker client executable
 
+ 
+ 
+## Dockerhub Credentials
 
-The last issue to tackle is authentication with Dockerhub for pushing the app image.  We've configured a credentials
+In order to push the image we build, we'll need to have our credentials available to the docker runtime
+in the slave.  Create a credentials with your dockerhub login with ID 'Dockerhub' like this:
 
+![Dockerhub](imgs/DockerhubCredentials.png)
 
 Dockerhub Credentials:
 
@@ -140,11 +121,14 @@ After logging in, we need to add Prometheus as a data source:
 
 Here are the config values that should be used:
 
+```
 Name: Prometheus
 Type: Promethus
 
 URL: http://prom-prometheus-server
 Access: proxy
+```
+
 
 
 Click save and test and we should be good to go.
