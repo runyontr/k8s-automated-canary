@@ -82,6 +82,13 @@ For running this demo, you will need to create your own creditials in Jenkins an
 in the application folder
 
 
+## Github credentials
+
+Since we used Github to create the repo, we need our github credentials stored so github can be used to fire off the builds
+
+
+
+
 
 # Create new Git Repo for application
 
