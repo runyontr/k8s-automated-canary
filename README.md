@@ -82,6 +82,36 @@ For running this demo, you will need to create your own creditials in Jenkins an
 in the application folder
 
 
+
+# Create new Git Repo for application
+
+
+
+
+
+
+# Create Jenkins Build
+
+On the home page click `Create new job` and select multibranch pipeline with build name `appinfo`
+
+
+In the git section, add a branch source by `Single repo and Branch`.  The Repository URL should be the
+ git repo setup in the previous section.  The default is to just build on the master branch, we want to add
+ another branch for `canary`.  Select `Add Branch` and populate the Branch Specifer with `*/canary`.
+ 
+ Click Save.
+ 
+ 
+ 
+# Initial push on master
+
+
+Take the contents of the `app` folder in this git repo and push it on the master branch of the repo that was created
+
+ 
+
+
+
 ## Build Dependencies
 
 Instead of installing Go and Kubectl in the pod performing each build, we've created an extension of the default

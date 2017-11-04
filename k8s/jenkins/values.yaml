@@ -48,6 +48,7 @@ Master:
       - workflow-job:2.13
       - credentials-binding:1.12
       - git:3.4.0
+      - github:1.28.1
 # Used to approve a list of groovy functions in pipelines used the script-security plugin. Can be viewed under /scriptApproval
   # ScriptApproval:
   #   - "method groovy.json.JsonSlurperClassic parseText java.lang.String"
