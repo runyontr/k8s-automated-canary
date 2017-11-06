@@ -48,6 +48,12 @@ Navigate to  `Manage Jenkins -> Configure Systems` and ensure the following sett
 This custom image is built from [this Dockerfile](jenkins/slave-image/Dockerfile) and has Golang 1.8 and
 kubectl 1.8.0 pre-installed so it doesn't have to be installed fresh each run.
 
+Talking to the Kubernetes cluster requires credentials that are provided to the pod as described
+[Here](https://kubernetes.io/docs/concepts/configuration/secret/#service-accounts-automatically-create-and-attach-secrets-with-api-credentials).
+  So no additional configuration is requried for authenticating to the kubernetes cluster.
+
+
+
 ## Explain docker in docker sidecar
  
  Thanks to @prydonius for this approach.  By adding the `docker:1.12-dind` container as a sidecar to the JNLP
@@ -82,15 +88,28 @@ in the application folder
 
 ## Github Webhook
 
-Disable security on Jenkins to allow simple POSTs to start builds.  We'll use this for both a github webhook
-and grafana alerts
+For this demo, we need to disable security on Jenkins to allow HTTP POST calls to start builds.   This will
+be used for Grafana running builds to rollback the canary build when not performing well.
+
+`Jenkins -> Manage Jenkins -> Configure Global Security`  and uncheck the `Enable Security` box.
 
 
 # Create new Git Repo for application
 
+Using Github (or other git provider) create a new git project for the application.  This documentation has the 
+git project located at github.com/runyontr/canary-app, and this value should be adjusted to your particular 
+remote.
+
+In your github project, navigate to  `Settings -> Integration & services` add a new service for `Jenkins (git plugin)` and enter the Jenkins root URL
+which can be found inside of Jenkins `Manage Jenkins -> Configure -> Jenkins Location -> Jenkins URL`.
+
+Like so:
+
+![Github Integration](imgs/githubintegration.png)
 
 
-
+This will notify your Jenkins deployment that there was a change in the git repo and Jenkins will then
+pull down the repo and look for changes.
 
 
 # Create Jenkins Build
@@ -98,8 +117,10 @@ and grafana alerts
 On the home page click `Create new job` and select multibranch pipeline with build name `appinfo`
 
 
-In the git section, add a branch source by `Single repo and Branch`.  The Repository URL should be the
- git repo setup in the previous section.  The default is to just build on the master branch, we want to add
+In the git section, add a branch source by `Git`.  Enter the git repo in the Repository URL.
+
+
+  The default is to just build on the master branch, we want to add
  another branch for `canary`.  Select `Add Branch` and populate the Branch Specifer with `*/canary`.
  
  Click Save.
@@ -114,24 +135,9 @@ Take the contents of the `app` folder in this git repo and push it on the master
  
 
 
-
-## Build Dependencies
-
-Instead of installing Go and Kubectl in the pod performing each build, we've created an extension of the default
-`jenkinsci/jnlp-slave` image that has Go (1.8.5) and Kubectl (1.8.0) installed.  This speeds up the time of the build,
-but doesn't allow for the flexibility of the Go plugin, where the go version is controlled by the Jenkinsfile.
-
-Kubectl is installed in the slave image at /usr/local/kubectl, and the credentials for talking to the cluster are
-mounted automatically by Kubernetes, so no additional configuration is required.  For more information see [LINK](LINKME)
-
-//TODO find actual link
-
-
-
 ## Monitoring
 
-//TODO all params to prometheus to only deploy prometheus. Don't need
-node exporter, push gateway, alert.
+Install Prometheus and Grafana via [Helm](https://helm.sh/).
 
 ```
 helm install stable/prometheus --name prom
@@ -139,22 +145,17 @@ helm install stable/grafana --name graf --set server.service.type=LoadBalancer -
  --set server.image=grafana/grafana:4.5.1
 ```
 
-As of writing this, [Issue 9777](https://github.com/grafana/grafana/issues/9777) prevents the latest from properly
-firing alerts
-
-kubernetes_sd_configs:
-- api_servers:
-- 'https://kubernetes'
-
-get the grafana admin password:
+As of writing this, [Issue 9777](https://github.com/grafana/grafana/issues/9777) prevents the latest Grafana image
+ from properly firing alerts, so we hard code a previous version.
 
 
-Log into the service at the following port (on 192.168.99.100) with the password admin
+ Log into Grafana at the following address
+ 
+ ```
+ kubectl get svc graf-grafana
+ ```
+ with the username/password `admin/admin`.
 
-```
-NODE_PORT=$(kubectl get svc graf-grafana  \
-  --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
-```
 
 
 After logging in, we need to add Prometheus as a data source:
@@ -176,18 +177,52 @@ Click save and test and we should be good to go.
 
 ## Import Dashboard
 
+Import the dashboard in the `grafana` folder [here](grafana/dashboard.json)
 
 
-#The Setup
+## Create Rollback Build
 
-To start, we will need a new git repository.  For ease, we chose to make a new project in github.com.
+In jenkins, we need to make a new build that will rollback the canary deployment. 
+ We create a new Freestyle
+project with name `canary-rollback`, which has a single build step:
 
-We need to replace the import packages in the application to prevent importing the packages from my project.
+![Rollback Build](imgs/rollbackbuild.png)
 
-```
-sed -i
 
-``` 
+
+## Grafana Notifcation
+
+Inside our grafana deployment at `/alerting/notifications`, we need to create a new notification Channel
+
+![Grafana Notification](imgs/grafananotification.png)
+
+The Dashboard that was imported should fire this notification when certain alerts are fired, causing the
+Jenkins build to delete the canary deployment.
+
+
+
+## View Dashboard
+
+This dashboard has 3 graphs:
+
+### AppInfo Response Time
+
+This shows the 50th, 90th and 99th percentile response times for the stable and release deployments.
+
+### Errors Per Second
+
+This shows the number of errors per second being returned from the service.  In this basic demo this should never
+be non-zero, but if the service starts spitting out errors in the canary deployment, the automatic rollback will
+remove the canary deployment.
+
+For example, if [line 77 in this file](app/appinfoservice.go) were uncommented. 
+
+
+### Canary Response Times
+
+This graph shows just the canary deployments response times.  Because of how Grafana works, we need a dedicated
+graph that only shows the canary times to alert on.  This alert is configured to fire if the average response time
+over the last 1 minute is greater than 2 seconds.  Additional alerts could be created for any SLOs on the system.
 
 
 ## Create Jenkins Job
