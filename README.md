@@ -212,4 +212,81 @@ Talk about manual running since Jenkins is all local right now, I'll manually ru
 
 
 
+# Before demo:
 
+ Reset git repo
+```
+git checkout 7ec948e
+git checkout -b temp
+git branch -D master
+git checkout -b master
+git push origin master -f
+git branch -D temp
+```
+
+Delete appinfo
+```
+kubectl delete deployment appinfo
+kubectl delete deployment appinfo-canary
+```
+
+
+
+
+
+
+# DEMO COMMANDS
+
+```
+cp -R ../k8s-automated-canary/app/* .
+git add .
+git commit -m "Initial app"
+git push
+```
+
+
+
+```
+git checkout -b canary
+```
+
+DO FIX
+
+```
+git add .
+git commit -m "Added namespace value to response object"
+git push origin canary
+```
+
+Show Grafana
+
+Show slow canary
+
+
+Show Unhealthy
+
+Show build in Jenkins that was triggered
+
+Show no more canary pod
+
+
+
+FIX
+
+git add .
+git commit -m "Removed sleep"
+git push origin canary
+
+
+Show build
+
+Show grafana/while has good values and response times look good
+
+
+
+
+ISSUE PR
+
+Merge PR (no sqaush, since that causes new build of canary branch)
+
+Show
