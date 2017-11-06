@@ -56,12 +56,13 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "runyontr_appinfo_service_request_latency_microseconds",
+              "expr": "avg(runyontr_appinfo_service_request_latency_microseconds) by (release,quantile)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "AppInfo - {{ release }} - {{ quantile }}",
-              "refId": "A"
+              "refId": "A",
+              "step": 2
             }
           ],
           "thresholds": [],
@@ -113,13 +114,50 @@
       "height": 250,
       "panels": [
         {
+          "alert": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    0.1
+                  ],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": [
+                    "A",
+                    "1m",
+                    "now"
+                  ]
+                },
+                "reducer": {
+                  "params": [],
+                  "type": "avg"
+                },
+                "type": "query"
+              }
+            ],
+            "executionErrorState": "alerting",
+            "frequency": "30s",
+            "handler": 1,
+            "name": "OPS alert",
+            "noDataState": "ok",
+            "notifications": [
+              {
+                "id": 1
+              }
+            ]
+          },
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
+          "datasource": null,
           "fill": 1,
-          "id": 2,
+          "id": 4,
           "legend": {
             "avg": false,
             "current": false,
@@ -131,6 +169,7 @@
           },
           "lines": true,
           "linewidth": 1,
+          "links": [],
           "nullPointMode": "null",
           "percentage": false,
           "pointradius": 5,
@@ -143,16 +182,36 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(runyontr_appinfo_service_request_count[1m])   ",
+              "expr": "sum(rate(runyontr_appinfo_service_request_latency_microseconds_count{app=\"appinfo\", release=\"stable\", error!=\"<nil>\"}[3m])) by (error)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 2,
-              "refId": "A"
+              "legendFormat": "Stable Errors - {{error}}",
+              "refId": "B",
+              "step": 2
+            },
+            {
+              "expr": "sum(rate(runyontr_appinfo_service_request_latency_microseconds_count{app=\"appinfo\", release=\"canary\", error!=\"<nil>\"}[3m])) by (error)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "Canary Errors - {{ error}}",
+              "refId": "A",
+              "step": 2
             }
           ],
-          "thresholds": [],
+          "thresholds": [
+            {
+              "colorMode": "critical",
+              "fill": true,
+              "line": true,
+              "op": "gt",
+              "value": 0.1
+            }
+          ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Panel Title",
+          "title": "Errors Per Second",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -168,7 +227,7 @@
           },
           "yaxes": [
             {
-              "format": "short",
+              "format": "ops",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -181,7 +240,7 @@
               "logBase": 1,
               "max": null,
               "min": null,
-              "show": true
+              "show": false
             }
           ]
         }
@@ -213,19 +272,19 @@
                 "query": {
                   "params": [
                     "A",
-                    "10s",
+                    "1m",
                     "now"
                   ]
                 },
                 "reducer": {
                   "params": [],
-                  "type": "last"
+                  "type": "avg"
                 },
                 "type": "query"
               }
             ],
-            "executionErrorState": "keep_state",
-            "frequency": "5s",
+            "executionErrorState": "alerting",
+            "frequency": "60s",
             "handler": 1,
             "name": "Canary Response Times alert",
             "noDataState": "no_data",
@@ -271,7 +330,8 @@
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "Canary - {{ gitcommit }}",
-              "refId": "A"
+              "refId": "A",
+              "step": 2
             }
           ],
           "thresholds": [
@@ -326,6 +386,17 @@
       "showTitle": false,
       "title": "Dashboard Row",
       "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": 250,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": false,
+      "title": "Dashboard Row",
+      "titleSize": "h6"
     }
   ],
   "schemaVersion": 14,
@@ -365,5 +436,5 @@
   },
   "timezone": "",
   "title": "AppInfo Metrics",
-  "version": 9
+  "version": 13
 }

@@ -74,6 +74,7 @@ func (s *appInfoBaseline) GetAppInfo() (AppInfo, error) {
 		}
 	}
 
+	//return info, fmt.Errorf("Forced error")
 	return info, err
 }
 

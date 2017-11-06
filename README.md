@@ -17,10 +17,6 @@ This tutorial looks to expand upon the tutorial in [runyontr/k8s-canary](http://
 ```
 helm install -f k8s/jenkins/values.yaml --name pretty-bird stable/jenkins
 ```
-//TODO(@trunyon) the docuemntation allows for configuring the default plugins:
-Master.InstallPlugins
-
-Then what do we need to do to configure each plugin?
 
 
 Get the login information for the admin password
@@ -54,7 +50,9 @@ kubectl 1.8.0 pre-installed so it doesn't have to be installed fresh each run.
 
 ## Explain docker in docker sidecar
  
- Make the following changes to the Kubernetes section's configurations:
+ Thanks to @prydonius for this approach.  By adding the `docker:1.12-dind` container as a sidecar to the JNLP
+  container, and mounting the docker executable from the kubernetes node, we are able to run docker commands
+  inside of JNLP (namely `docker build` and `docker push`).
  
 
  
@@ -231,8 +229,11 @@ kubectl delete deployment appinfo-canary
 ```
 
 
+Watch terminals
 
-
+`watch --color -d kubectl get pods -l app=appinfo`
+`watch --color -d "http://104.154.230.2:8080/v1/appinfo | jq ."
+`
 
 
 # DEMO COMMANDS
