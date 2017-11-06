@@ -6,7 +6,7 @@ metadata:
     releaes: stable
     app:  appinfo
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: appinfo
@@ -16,6 +16,8 @@ spec:
         app: appinfo
         release: stable
         gitcommit: GITCOMMIT
+      annotations:
+        prometheus.io/scrape: "true"
     spec:
       containers:
       - name: appinfo-containers

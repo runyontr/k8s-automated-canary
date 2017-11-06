@@ -82,12 +82,10 @@ For running this demo, you will need to create your own creditials in Jenkins an
 in the application folder
 
 
-## Github credentials
+## Github Webhook
 
-Since we used Github to create the repo, we need our github credentials stored so github can be used to fire off the builds
-
-
-
+Disable security on Jenkins to allow simple POSTs to start builds.  We'll use this for both a github webhook
+and grafana alerts
 
 
 # Create new Git Repo for application
@@ -134,10 +132,17 @@ mounted automatically by Kubernetes, so no additional configuration is required.
 
 ## Monitoring
 
+//TODO all params to prometheus to only deploy prometheus. Don't need
+node exporter, push gateway, alert.
+
 ```
-helm install stable/prometheus --set server.service.type=NodePort --name prom
-helm install stable/grafana  --set server.service.type=NodePort --set server.adminPassword=admin --name graf
+helm install stable/prometheus --name prom
+helm install stable/grafana --name graf --set server.service.type=LoadBalancer --set server.adminPassword=admin \
+ --set server.image=grafana/grafana:4.5.1
 ```
+
+As of writing this, [Issue 9777](https://github.com/grafana/grafana/issues/9777) prevents the latest from properly
+firing alerts
 
 kubernetes_sd_configs:
 - api_servers:
