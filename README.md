@@ -225,104 +225,77 @@ graph that only shows the canary times to alert on.  This alert is configured to
 over the last 1 minute is greater than 2 seconds.  Additional alerts could be created for any SLOs on the system.
 
 
-## Create Jenkins Job
-Multibranch project
-
-Screenshots of configuration
 
 
-checkout app locally
+# CICD in Action
 
+## Monitor
 
-Checkout branch `canary`
-
-`cp -R ./app/* ../appinfo/`
-
-Create commit and push up
-
-(this would now be automated, but since I'm runnign jenkins locally, I'll)
-Talk about manual running since Jenkins is all local right now, I'll manually run the check for new commits
-
-
-
-# Before demo:
-
- Reset git repo
-```
-git checkout 7ec948e
-git checkout -b temp
-git branch -D master
-git checkout -b master
-git push origin master -f
-git branch -D temp
-```
-
-Delete appinfo
-```
-kubectl delete deployment appinfo
-kubectl delete deployment appinfo-canary
-```
-
-
-Watch terminals
-
-`watch --color -d kubectl get pods -l app=appinfo`
-`watch --color -d "http://104.154.230.2:8080/v1/appinfo | jq ."
-`
-
-
-# DEMO COMMANDS
+Setup a terminal to monitor response of the AppInfo service
 
 ```
-cp -R ../k8s-automated-canary/app/* .
-git add .
-git commit -m "Initial app"
-git push
+kubectl get svc appinfo
 ```
 
+will show the External-IP of the service.  Let this be `SERVICE_IP`
 
+then
+
+```
+watch -n .5 --color -d "curl -s SERVICE_IP:8080/v1/appinfo | jq ."
+```
+
+will query the service 2x per second and show any changes in the response.
+
+## Fix Response
+
+looking at the response, the output does not properly fill in the Namespace value.  We will submit a fix
+for this bug in the canary branch. In your git repo, checkout a new branch called `canary`
 
 ```
 git checkout -b canary
 ```
 
-DO FIX
+and uncomment the following two lines in `appinfoservice.go`
 
+```go
+	//time.Sleep(3*time.Second)
+	//info.Namespace = os.Getenv("MY_POD_NAMESPACE") //custom defined in the deployment spec
 ```
-git add .
-git commit -m "Added namespace value to response object"
-git push origin canary
-```
 
-Show Grafana
-
-Show slow canary
+Don't forget to `import "time"`!  This will fix the Namespace value in the response, but will also introduce a slower response than is acceptable.
 
 
-Show Unhealthy
-
-Show build in Jenkins that was triggered
-
-Show no more canary pod
+Commit and push this branch to `origin/canary`, and Github will trigger Jenkins to build and deploy a canary version of this application.
+After being deployed, the `watch` loop should show some responses with the correct Namespace value, and a corresponding
+`"Release": "canary"` tag.  
 
 
-
-FIX
-
-git add .
-git commit -m "Removed sleep"
-git push origin canary
+Even though this produces the correct response, the deployment will rollback as the Grafana dashboard monitoring
+response times will fire the alert building the `rollback canary` build.  You should see the state of the 
+responses in the watch terminal revert to its original pattern.
 
 
-Show build
+## Really Fix the Response
 
-Show grafana/while has good values and response times look good
+Go back to `appinfoservice.go` and comment back out the `time.Sleep(3*time.Second)` line (and remove the corresponding
+time import).    Commit and push these changes.
+
+This should again show fixed canary responses to the watch terminal.  The response times in Grafana should be below
+the alert threshold and should continue to remain healthy.
 
 
 
 
-ISSUE PR
+## Merge into master
 
-Merge PR (no sqaush, since that causes new build of canary branch)
+Issue a Pull Request on Github from `canary-> master`.  When pulling the PR, make sure not to squash and merge, as this
+will create a new commit on Canary (hence firing the build) and will cause some race conditions between deploying 
+the canary app on the canary branch build and removing the canary build in the master build.
 
-Show
+
+Once the master build is complete, the response in the watch terminal should all be correct, and all have
+`"Release": "stable"`.
+
+
+
